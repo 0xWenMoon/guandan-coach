@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guandan 掼蛋 — coached</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">掼蛋<span>Guandan</span></div>
+    <div class="scoreline">
+      <div class="team ours"><span class="tlabel">You &amp; North</span><b id="lvl-us">2</b></div>
+      <div class="vs">vs</div>
+      <div class="team theirs"><span class="tlabel">West &amp; East</span><b id="lvl-them">2</b></div>
+    </div>
+    <div class="meta">
+      <span>Deal <b id="deal">1</b></span>
+      <span class="sep"></span>
+      <span>Playing at <b id="level-card">2</b></span>
+      <span class="sep"></span>
+      <span class="wildnote" id="wild-note"></span>
+    </div>
+    <div class="tools">
+      <label class="strength">Engine
+        <select id="strength">
+          <option value="fast">Fast</option>
+          <option value="normal" selected>Normal</option>
+          <option value="strong">Strong</option>
+        </select>
+      </label>
+      <button id="new-match" class="ghost">New match</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="table">
+      <div class="seat north" id="seat-2"></div>
+      <div class="seat west" id="seat-1"></div>
+      <div class="seat east" id="seat-3"></div>
+      <div class="center">
+        <div class="pile">
+          <div class="play north" id="play-2"></div>
+          <div class="play west" id="play-1"></div>
+          <div class="centerinfo">
+            <div id="trick-label" class="tricklabel">—</div>
+            <div id="turn" class="turn"></div>
+          </div>
+          <div class="play east" id="play-3"></div>
+          <div class="play south" id="play-0"></div>
+        </div>
+      </div>
+      <div class="seat south" id="seat-0"></div>
+    </section>
+
+    <section class="handbar">
+      <div class="handwrap"><div id="hand" class="hand"></div></div>
+      <div class="controls">
+        <button id="play" class="primary" disabled>Play</button>
+        <button id="pass" disabled>Pass</button>
+        <button id="hint" class="ghost">Hint</button>
+        <button id="clear" class="ghost">Clear</button>
+        <span id="selinfo" class="selinfo"></span>
+      </div>
+    </section>
+  </main>
+
+  <aside id="coach">
+    <div class="coachhead">
+      <h2>Coach</h2>
+      <div id="accuracy" class="accuracy"></div>
+    </div>
+    <div id="coachbody" class="coachbody">
+      <p class="empty">Play a card and the engine will tell you whether it was the best move — and if not, what it would have played instead and why.</p>
+    </div>
+    <div class="loghead">Table log</div>
+    <ol id="log" class="log"></ol>
+  </aside>
+</div>
+<div id="modal" class="modal hidden"><div class="sheet" id="sheet"></div></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

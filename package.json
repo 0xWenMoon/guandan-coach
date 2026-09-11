@@ -1,0 +1,16 @@
+{
+  "name": "guandan-coach",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Guandan (掼蛋) with an engine that plays strongly and coaches every move you make.",
+  "scripts": {
+    "start": "python3 -m http.server 8765",
+    "test": "node test/index.js",
+    "bench": "node bench.js greedy",
+    "bench:search": "node bench.js mc 24"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
