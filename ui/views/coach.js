@@ -60,9 +60,33 @@ export function createCoachView({ body, accuracy }) {
         ...nodes));
     }
 
+    if (r.confident === false) {
+      body.append(el('p', { class: 'uncertain' },
+        'The top two lines are close enough that the engine cannot really separate them — '
+        + 'treat this verdict as a lean, not a ruling.'));
+    }
+
     const ul = el('ul', { class: 'reasons' });
-    for (const reason of r.reasons) ul.append(el('li', {}, reason.text));
+    for (const reason of r.reasons) {
+      const li = el('li', {}, reason.text);
+      if (reason.principle) {
+        li.append(el('span', { class: 'principle' },
+          el('b', {}, reason.principle.cn),
+          el('span', {}, reason.principle.en)));
+      }
+      ul.append(li);
+    }
     body.append(ul);
+
+    if (r.table?.length) {
+      const facts = el('div', { class: 'facts' }, el('h3', {}, 'At the table'));
+      for (const f of r.table) {
+        facts.append(el('div', { class: 'fact' },
+          el('span', { class: 'fl' }, f.label),
+          el('span', { class: 'ft' }, f.text)));
+      }
+      body.append(facts);
+    }
 
     const box = ranking(r.ranked, level);
     box.append(el('div', { class: 'note' },

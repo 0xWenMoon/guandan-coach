@@ -40,7 +40,10 @@ header {
 .meta { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
 .meta b { color: var(--ink); }
 .sep { width: 1px; height: 14px; background: var(--line); }
-.wildnote { color: var(--gold); }
+.wildnote {
+  color: var(--gold); border: 1px solid rgba(216,178,92,.4); border-radius: 999px;
+  padding: 2px 10px; font-weight: 600; background: rgba(216,178,92,.08);
+}
 .tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .strength { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
 select, button {
@@ -255,6 +258,20 @@ main { display: flex; flex-direction: column; min-height: 0; }
 .reasons li::before { content: ""; position: absolute; left: 0; top: 15px; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
 .played { display: flex; gap: 4px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
 .played .lbl { font-size: 12px; color: var(--muted); width: 100%; }
+.uncertain {
+  font-size: 12px; color: var(--warn); background: rgba(217,164,65,.08);
+  border-left: 2px solid var(--warn); padding: 7px 10px; border-radius: 0 6px 6px 0; margin: 10px 0 0;
+}
+.principle {
+  display: flex; align-items: baseline; gap: 7px; margin-top: 6px;
+  font-size: 11px; color: var(--muted);
+}
+.principle b { color: var(--gold); font-weight: 600; font-size: 12px; letter-spacing: .02em; }
+.facts { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.facts h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.fact { display: flex; gap: 10px; font-size: 12.5px; padding: 4px 0; color: #cbd9d3; }
+.fact .fl { flex: 0 0 88px; color: var(--muted); }
+.fact .ft { flex: 1; }
 .lines { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
 .lines h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .line { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 3px 0; color: #cbd9d3; }
@@ -280,3 +297,35 @@ main { display: flex; flex-direction: column; min-height: 0; }
 .sheet .row { display: flex; gap: 10px; margin-top: 16px; }
 .standings { margin: 12px 0; }
 .standings div { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+
+/* ---------- responsive ---------- */
+/* The table is the priority; the coach panel narrows, then moves below it. */
+@media (max-width: 1240px) {
+  #app { grid-template-columns: 1fr 330px; }
+  .table { grid-template-columns: minmax(120px, 170px) 1fr minmax(120px, 170px); }
+}
+@media (max-width: 1040px) {
+  body { overflow: auto; }
+  #app { grid-template-columns: 1fr; grid-template-rows: auto auto auto; height: auto; min-height: 100vh; }
+  main { min-height: 68vh; }
+  #coach { border-left: none; border-top: 1px solid var(--line); }
+  .log { max-height: 220px; }
+  header { flex-wrap: wrap; row-gap: 10px; }
+  .tools { margin-left: 0; }
+}
+@media (max-width: 760px) {
+  .table { grid-template-columns: 86px 1fr 86px; padding: 10px; margin: 10px; }
+  .plate { min-width: 0; padding: 6px 9px; }
+  .plate .who { font-size: 13px; }
+  .seat.west, .seat.east { gap: 5px; }
+  .card { --w: 44px; }
+  .col .card { margin-top: -42px; }
+  .brand span { display: none; }
+  .meta { font-size: 12px; }
+  .controls { flex-wrap: wrap; row-gap: 8px; }
+  .selinfo { width: 100%; margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcards .card { animation: none; }
+  * { transition-duration: .01ms !important; }
+}

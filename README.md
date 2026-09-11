@@ -9,7 +9,7 @@ Play it here: **https://0xwenmoon.github.io/guandan-coach/**
 ```bash
 npm install               # jsdom, for the headless UI tests
 npm start                 # local dev server at http://localhost:8765
-npm test                  # 68 tests, no browser needed
+npm test                  # 94 tests, no browser needed
 npm run bench             # engine strength check
 ```
 
@@ -25,6 +25,10 @@ over `file://`. Every push to `main` runs the suite and, if it passes, deploys.
   Inaccuracy / Mistake / Blunder), the cost in levels, the engine's reasoning,
   and its ranked alternatives.
 - **Hint** — ask before you commit, and it selects its choice in your hand.
+- **Arranging your hand** — one column per rank, cards standing vertically, the
+  way Guandan players actually hold them. **Group** pins a set of cards together
+  so a full house you have decided on stays put; **同花顺** finds and highlights
+  straight flushes, cycling if you have more than one.
 - A running tally of how often you found the engine's first choice.
 
 ## Rules implemented
@@ -70,11 +74,17 @@ engines do:
    −3) and pick the best average. Every candidate move is evaluated on the
    *same* sampled deals, which cuts the variance sharply.
 
-Measured (`npm run bench`): the rollout policy beats random legal play **94.5%**
-of deals (+2.74 levels/deal over 200 deals). The search on top of it beats the
+Measured (`npm run bench`): the rollout policy beats random legal play **95%**
+of deals (+2.77 levels/deal over 200 deals). The search on top of it beats the
 bare policy **71%** of deals at only 6 samples — indicative on 24 deals rather
 than conclusive, and it gets stronger with the Normal/Strong settings the UI
 uses.
+
+Folk strategy is adopted only when it measures. 晚炸不如早炸 ("bombing late is
+worse than bombing early") is a standard Guandan maxim; implemented as a policy
+change and played head to head against the hoard-the-bomb policy it won
+**53.96% of 2500 deals** (+0.21 levels/deal) — outside the 48–52% band a coin
+flip would produce, so it stayed. Re-run it with `node bench.js policy 2500`.
 
 The engine runs in a Web Worker, and **the snapshot it receives has every hand
 but its own redacted to bare card counts** (`src/serialize.js`) — it cannot see
@@ -82,12 +92,31 @@ your cards even by accident. There is a test that asserts this.
 
 ## How the coach explains itself
 
-Nothing is improvised. The verdict comes from the search (cost in levels between
-your move and the best one), and each reason is a checked structural fact:
-you overtook your own partner; you spent a bomb a plain play would have won;
-you burned the ♥level wildcard where an ordinary card served; this breaks up a
-run you were going to play in one turn; you could have gone out; a cheaper card
-did the same job; after this you need 8 turns instead of 6. See `src/coach.js`.
+Nothing is improvised. The verdict is the level cost the search measured between
+your move and the best one. Each reason is a checked fact — a structural property
+of your hand, or something countable from the cards already played — and carries
+the Guandan principle it comes from, so the advice is transferable rather than a
+one-off remark:
+
+| | |
+|---|---|
+| 先出小牌 | lead small, keep the big cards back |
+| 晚炸不如早炸 | bombing late is worse than bombing early |
+| 情况不明，对子先行 | when the table is unclear, probe with a pair |
+| 记断张 | count the gaps — a rank you hold none of is bomb material |
+| 帮对家走牌 | if you cannot go out, get your partner out |
+| 不盖对家 | never take a trick off your own partner |
+| 留牌权 | the lead is worth more than the trick |
+| 配牌 | keep your combinations intact |
+| 算轮次 | count how many turns your hand still needs |
+
+`src/knowledge.js` does the counting a strong player does in their head: which
+cards are unaccounted for, whether your K is now the best single left, which
+ranks are still whole enough to be a bomb (the 断张 warning), and whose race the
+deal has become. Those facts are shown every move, not only when you err.
+
+The panel also says when it is *unsure*: if the top two lines are within 0.2 of
+a level, it tells you the verdict is a lean rather than a ruling.
 
 ## Layout
 
@@ -103,12 +132,13 @@ src/cards.js       deck, ranking, the level card and wildcard
 src/combos.js      combination types, wildcard resolution, comparison
 src/moves.js       legal move generation
 src/eval.js        hand decomposition into 手数 (turns needed)
+src/knowledge.js   card counting: what is unseen, what is now unbeatable
 src/game.js        match state machine: tricks, 接风, tribute, levels
 src/bot.js         determinized Monte Carlo search
 src/coach.js       move review and reasoning
 src/serialize.js   the redacting snapshot sent to the worker
 src/worker.js      + engine-api.js — the engine off the UI thread
-test/              68 tests, including a headless run of the real page
+test/              94 tests, including a headless run of the real page
 bench.js           policy-vs-policy strength measurement
 ```
 

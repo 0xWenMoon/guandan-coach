@@ -19,6 +19,7 @@ const randomAgent = (rng) => (g, seat) => {
   return moves[Math.floor(rng() * moves.length)];
 };
 const greedyAgent = (rng) => (g, seat) => policyMove(g, seat, rng);
+const hoardAgent = (rng) => (g, seat) => policyMove(g, seat, rng, { bombEarly: false });
 const searchAgent = (rng, samples, limit) => (g, seat) =>
   (analyze(g, seat, { samples, limit, rng, timeBudgetMs: 3000 }).best?.move ?? null);
 
@@ -57,6 +58,11 @@ const which = process.argv[2] ?? 'greedy';
 if (which === 'greedy') {
   const r = match(greedyAgent, randomAgent, 200, 99);
   console.log('greedy policy vs random:', JSON.stringify(r));
+} else if (which === 'policy') {
+  // Does 晚炸不如早炸 actually beat hoarding the bomb? Head to head.
+  const n = Number(process.argv[3] ?? 400);
+  const r = match(greedyAgent, hoardAgent, n, 4242);
+  console.log(`bomb-early vs bomb-hoarding over ${n} deals:`, JSON.stringify(r));
 } else {
   const n = Number(process.argv[3] ?? 20);
   const r = match((rng) => searchAgent(rng, 6, 8), greedyAgent, n, 1234);

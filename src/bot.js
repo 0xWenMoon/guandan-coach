@@ -85,8 +85,16 @@ function minOpponentCards(sim, seat) {
   return min;
 }
 
-/** Fast, plausible play used inside rollouts. Returns null to pass. */
-export function policyMove(sim, seat, rng) {
+/**
+ * Fast, plausible play used inside rollouts. Returns null to pass.
+ *
+ * `bombEarly` implements the Guandan maxim 晚炸不如早炸 — bombing late is worse
+ * than bombing early. A player who leads a big shape usually holds more of
+ * them, so breaking one up straight away is better than sitting on a bomb you
+ * may never get to spend. Measured against the hoarding policy in bench.js.
+ */
+export function policyMove(sim, seat, rng, opts = {}) {
+  const { bombEarly = true } = opts;
   const target = sim.trick.target;
   const hand = sim.hands[seat];
   const moves = legalMoves(hand, sim.level, target);
@@ -118,17 +126,20 @@ export function policyMove(sim, seat, rng) {
     return cheap;
   }
 
-  // Bombs only: worth it when someone is about to go out.
-  if (urgency <= 3) return moves.reduce((b, m) => (bombKey(m) < bombKey(b) ? m : b));
+  // Bombs only.
+  const cheapestBomb = () => moves.reduce((b, m) => (bombKey(m) < bombKey(b) ? m : b));
+  if (urgency <= 3) return cheapestBomb();
+  // 晚炸不如早炸: a five-card-plus shape from an opponent is worth breaking now.
+  if (bombEarly && target.cards.length >= 5 && rng() < 0.6) return cheapestBomb();
   return null;
 }
 
-export function rollout(sim, rng) {
+export function rollout(sim, rng, opts) {
   let guard = 0;
   while (sim.phase === PHASE.PLAYING) {
     if (guard++ > 4000) break;
     const seat = sim.current;
-    const m = policyMove(sim, seat, rng);
+    const m = policyMove(sim, seat, rng, opts);
     if (m) sim.play(seat, m, { validate: false });
     else sim.pass(seat);
   }

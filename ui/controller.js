@@ -179,7 +179,15 @@ export class Controller {
     this.store.set({ coach: { status: 'reviewing' } });
 
     // The review rides the coach channel, so it never delays the next bot move.
-    this.engine.request('coach', 'review', { snap, seat: this.human, move, opts: this.strength() })
+    // Reviews get more samples than the bots do: they run on their own worker,
+    // so a steadier verdict costs the player nothing in waiting.
+    const base = this.strength();
+    const reviewOpts = {
+      ...base,
+      samples: Math.max(40, base.samples ?? 0),
+      timeBudgetMs: Math.max(6000, base.timeBudgetMs ?? 0),
+    };
+    this.engine.request('coach', 'review', { snap, seat: this.human, move, opts: reviewOpts })
       .then((review) => {
         if (!this.#current(generation, game) || !review) return;
         this.#recordReview(review);
