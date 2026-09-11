@@ -37,6 +37,7 @@ export function createCoachView({ body, accuracy }) {
     if (coach.status === 'reviewing') return body.append(el('p', { class: 'empty' }, 'Reviewing your move…'));
     if (coach.status === 'hinting') return body.append(el('p', { class: 'empty' }, 'Thinking…'));
     if (coach.status === 'error') return body.append(el('p', { class: 'empty' }, 'The engine could not answer that one.'));
+    if (coach.status === 'note') return body.append(el('p', { class: 'headline' }, coach.text));
 
     if (coach.status === 'hint') {
       const h = coach.hint;

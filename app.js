@@ -37,7 +37,10 @@ const controller = new Controller({
   onError: (err) => console.error(err),
 });
 
-const handView = createHandView($('hand'), { onToggle: (id) => controller.toggleCard(id) });
+const handView = createHandView($('hand'), {
+  onToggle: (id) => controller.toggleCard(id),
+  onDissolveGroup: (id) => controller.dissolveGroup(id),
+});
 const tableView = createTableView({
   seatRoot: (seat) => $(`seat-${seat}`),
   playRoot: (seat) => $(`play-${seat}`),
@@ -64,6 +67,7 @@ function render(state) {
   handView({
     cards: game.hands[HUMAN], level: game.level,
     selected: state.selected, interactive: state.phase === UI.AWAITING_HUMAN,
+    groups: state.groups ?? [], highlight: state.highlight ?? null,
   });
   renderControls(state);
   coachView({ coach: state.coach, stats: state.stats, level: game.level });
@@ -86,7 +90,9 @@ function renderControls(state) {
 
   enable($('pass'), yourTurn && !!game.trick?.target);
   enable($('hint'), yourTurn);
-  enable($('clear'), state.selected.size > 0);
+  enable($('flush'), !!game && game.hands[HUMAN].length >= 5);
+  enable($('group'), state.selected.size >= 2);
+  enable($('clear'), state.selected.size > 0 || (state.highlight?.size ?? 0) > 0);
 
   if (!yourTurn) {
     enable($('play'), false);
@@ -191,6 +197,8 @@ function openMatchOver(state) {
 $('play').onclick = () => controller.playSelected();
 $('pass').onclick = () => controller.pass();
 $('hint').onclick = () => controller.hint();
+$('group').onclick = () => controller.createGroup();
+$('flush').onclick = () => controller.findFlush();
 $('clear').onclick = () => controller.clearSelection();
 $('new-match').onclick = () => controller.newMatch();
 
@@ -199,6 +207,8 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !$('play').disabled) controller.playSelected();
   else if (e.key === 'p' && !$('pass').disabled) controller.pass();
   else if (e.key === 'h' && !$('hint').disabled) controller.hint();
+  else if (e.key === 'g' && !$('group').disabled) controller.createGroup();
+  else if (e.key === 'f' && !$('flush').disabled) controller.findFlush();
   else if (e.key === 'Escape') controller.clearSelection();
 });
 

@@ -7,7 +7,8 @@
 import { Game, PHASE } from '../src/game.js';
 import { sortHand } from '../src/cards.js';
 import { snapshot } from '../src/serialize.js';
-import { readingFor } from '../src/moves.js';
+import { readingFor, legalMoves } from '../src/moves.js';
+import { identify, describeCombo, TYPE } from '../src/combos.js';
 import { EngineClient } from './engine-client.js';
 
 export const UI = {
@@ -30,6 +31,7 @@ export class Controller {
     this.strength = strength;
     this.delayMs = delayMs;
     this.onError = onError;
+    this.groupSeq = 0;
   }
 
   // -- lifecycle ------------------------------------------------------------
@@ -45,6 +47,9 @@ export class Controller {
       thinkingSeat: null,
       coach: { status: 'idle' },
       stats: { moves: 0, best: 0, loss: 0 },
+      groups: [],
+      highlight: null,
+      flushIndex: -1,
       version: 0,
     });
     this.advance();
@@ -55,7 +60,10 @@ export class Controller {
     const { game } = this.store.get();
     game.startDeal();
     for (const s of [0, 1, 2, 3]) game.hands[s] = sortHand(game.hands[s], game.level);
-    this.store.set({ selected: new Set(), coach: { status: 'idle' }, thinkingSeat: null });
+    this.store.set({
+      selected: new Set(), coach: { status: 'idle' }, thinkingSeat: null,
+      groups: [], highlight: null, flushIndex: -1,
+    });
     this.store.touch();
     this.advance();
   }
@@ -143,7 +151,7 @@ export class Controller {
     this.store.set({ selected: next });
   }
 
-  clearSelection() { this.store.set({ selected: new Set() }); }
+  clearSelection() { this.store.set({ selected: new Set(), highlight: null, flushIndex: -1 }); }
 
   /** What the current selection would be played as, or why it cannot be. */
   reading() {
@@ -189,9 +197,74 @@ export class Controller {
       this.onError?.(err);
       return;
     }
-    this.store.set({ selected: new Set() });
+    this.store.set({ selected: new Set(), highlight: null, ...this.#prunedGroups() });
     this.store.touch();
     this.advance();
+  }
+
+  /** Drop cards that have left the hand; forget groups that are used up. */
+  #prunedGroups() {
+    const { game, groups } = this.store.get();
+    const held = new Set(game.hands[this.human].map((c) => c.id));
+    const next = groups
+      .map((g) => ({ ...g, cardIds: g.cardIds.filter((id) => held.has(id)) }))
+      .filter((g) => g.cardIds.length > 0);
+    const same = next.length === groups.length
+      && next.every((g, i) => g.cardIds.length === groups[i].cardIds.length);
+    return same ? {} : { groups: next };
+  }
+
+  // -- arranging your hand --------------------------------------------------
+
+  /** Pin the selected cards together so they stay as one unit in the hand. */
+  createGroup() {
+    const { game, selected, groups } = this.store.get();
+    if (selected.size < 2) return;
+    const cards = game.hands[this.human].filter((c) => selected.has(c.id));
+    const ids = new Set(cards.map((c) => c.id));
+    // A card belongs to at most one group: take it out of any it was already in.
+    const rest = groups
+      .map((g) => ({ ...g, cardIds: g.cardIds.filter((id) => !ids.has(id)) }))
+      .filter((g) => g.cardIds.length > 0);
+    const reading = identify(cards, game.level);
+    const label = reading ? describeCombo(reading, game.level) : `${cards.length} cards`;
+    this.store.set({
+      groups: [...rest, { id: `g${++this.groupSeq}`, cardIds: cards.map((c) => c.id), label }],
+    });
+  }
+
+  dissolveGroup(id) {
+    const { groups } = this.store.get();
+    this.store.set({ groups: groups.filter((g) => g.id !== id) });
+  }
+
+  /** Select a straight flush from the hand, cycling if there is more than one. */
+  findFlush() {
+    const { game, flushIndex } = this.store.get();
+    if (!game) return;
+    const flushes = legalMoves(game.hands[this.human], game.level, null)
+      .filter((m) => m.type === TYPE.STRAIGHT_FLUSH)
+      .sort((a, b) => a.rank - b.rank);
+    if (!flushes.length) {
+      this.store.set({
+        highlight: null,
+        coach: { status: 'note', text: 'No straight flush in your hand right now. '
+          + 'A straight flush is five consecutive cards of one suit — it outranks every '
+          + 'four- and five-card bomb, so it is worth watching for as cards come in.' },
+      });
+      return;
+    }
+    const i = (flushIndex + 1) % flushes.length;
+    const pick = flushes[i];
+    this.store.set({
+      selected: new Set(pick.cards.map((c) => c.id)),
+      highlight: new Set(pick.cards.map((c) => c.id)),
+      flushIndex: i,
+      coach: { status: 'note', text: flushes.length === 1
+        ? `Found ${describeCombo(pick, game.level)}, highlighted in your hand.`
+        : `Found ${flushes.length} straight flushes. Showing ${i + 1} of ${flushes.length}: `
+          + `${describeCombo(pick, game.level)}. Press again to cycle.` },
+    });
   }
 
   #recordReview(review) {

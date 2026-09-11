@@ -85,8 +85,8 @@ if (!JSDOM) {
 } else {
   test('the page boots, deals a hand, and wires up the table', async () => {
     const { $, errors } = await boot();
-    await waitFor(() => $('hand').children.length > 0, 'the hand to render');
-    eq($('hand').children.length, 27, 'you are dealt 27 cards');
+    await waitFor(() => $('hand').querySelectorAll('.card').length > 0, 'the hand to render');
+    eq($('hand').querySelectorAll('.card').length, 27, 'you are dealt 27 cards');
     eq($('deal').textContent, '1');
     assert($('wild-note').textContent.includes('wild'), 'the wildcard is named in the header');
     for (const seat of [0, 1, 2, 3]) assert($(`seat-${seat}`).textContent.length > 0, `seat ${seat} rendered`);
@@ -102,12 +102,12 @@ if (!JSDOM) {
     await waitFor(() => $('coachbody').querySelector('.headline'), 'the hint to come back', 30000);
 
     const picked = $('hand').querySelectorAll('.sel').length;
-    const before = $('hand').children.length;
+    const before = $('hand').querySelectorAll('.card').length;
     if (picked > 0) {
       assert(!$('play').disabled, 'a hinted selection is playable');
       assert($('selinfo').textContent.startsWith('Plays as'), `selinfo said: ${$('selinfo').textContent}`);
       $('play').click();
-      await waitFor(() => $('hand').children.length === before - picked, 'the cards to leave your hand');
+      await waitFor(() => $('hand').querySelectorAll('.card').length === before - picked, 'the cards to leave your hand');
     } else {
       // The engine is entitled to recommend passing; that is still a coached move.
       assert($('coachbody').textContent.includes('pass'), 'a hint with no cards must be a recommendation to pass');
@@ -132,7 +132,7 @@ if (!JSDOM) {
     const freeLead = $('trick-label').textContent.startsWith('Free lead');
 
     // The hand re-renders on every click, so always re-query by index.
-    const at = (i) => $('hand').children[i];
+    const at = (i) => $('hand').querySelectorAll('.card')[i];
     at(0).click();
     await tick();
     assert(at(0).classList.contains('sel'), 'the clicked card is selected');
@@ -166,12 +166,12 @@ if (!JSDOM) {
 
   test('restarting while a bot is thinking does not corrupt the game', async () => {
     const { $, errors } = await boot();
-    await waitFor(() => $('hand').children.length > 0, 'the first deal');
+    await waitFor(() => $('hand').querySelectorAll('.card').length > 0, 'the first deal');
     // Interrupt repeatedly, exactly as an impatient player would.
     for (let i = 0; i < 6; i++) { $('new-match').click(); await tick(35); }
     await tick(1200);
     eq(errors.length, 0, `console errors: ${errors.join(' | ')}`);
-    eq($('hand').children.length, 27, 'a clean 27-card hand');
+    eq($('hand').querySelectorAll('.card').length, 27, 'a clean 27-card hand');
     eq($('deal').textContent, '1', 'back to deal 1');
     const headers = [...$('log').children].filter((li) => /— Deal 1,/.test(li.textContent));
     eq(headers.length, 1, 'the log was reset on restart, not appended to six times over');

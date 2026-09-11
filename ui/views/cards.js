@@ -7,17 +7,22 @@ import { isWild, isJoker, RANK_LABEL, SUIT_SYMBOL } from '../../src/cards.js';
 const SIZES = ['small', 'mini'];
 
 function build(card) {
+  // The index sits in the top-left corner, because a stacked card only ever
+  // shows its top sliver — that corner is the whole point of the layout.
+  const r = el('span', { class: 'r' });
+  const s = el('span', { class: 's' });
   const node = el('div', { class: 'card', dataset: { id: card.id }, role: 'img' },
-    el('span', { class: 'r' }),
-    el('span', { class: 's' }),
+    el('span', { class: 'idx' }, r, s),
+    el('span', { class: 'pip' }),
     el('span', { class: 'wildtag' }));
-  const [r, s] = node.children;
   if (isJoker(card)) {
     r.textContent = card.rank === 16 ? '大' : '小';
     s.textContent = '★';
+    node.querySelector('.pip').textContent = '★';
   } else {
     r.textContent = RANK_LABEL[card.rank];
     s.textContent = SUIT_SYMBOL[card.suit];
+    node.querySelector('.pip').textContent = SUIT_SYMBOL[card.suit];
   }
   return node;
 }
@@ -40,7 +45,7 @@ function style(node, card, level, size) {
   toggle(node, 'wild', wild);
   toggle(node, 'levelcard', !wild && card.rank === level);
   for (const s of SIZES) toggle(node, s, size === s);
-  node.children[2].textContent = wild ? '百搭' : '';
+  node.querySelector('.wildtag').textContent = wild ? '百搭' : '';
   node.setAttribute('aria-label', cardName(card, level));
 }
 
